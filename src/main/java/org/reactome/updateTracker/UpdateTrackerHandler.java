@@ -50,8 +50,8 @@ public class UpdateTrackerHandler {
 
     public void handleUpdateTrackerInstances(boolean uploadUpdateTrackerInstancesToSource) throws Exception {
         if (uploadUpdateTrackerInstancesToSource) {
-        	logger.info("Storing release instance in source database");
-        	storeReleaseInstanceInSourceDatabase();
+            logger.info("Storing release instance in source database");
+            storeReleaseInstanceInSourceDatabase();
         }
         logger.info("Creating event update tracker instances");
         createAndStoreUpdateTrackerInstances(ComparisonType.EVENT, uploadUpdateTrackerInstancesToSource);
@@ -60,27 +60,27 @@ public class UpdateTrackerHandler {
     }
     
     private void storeReleaseInstanceInSourceDatabase() throws Exception {
-    	GKInstance releaseInstanceFromSlice = getMostRecentReleaseInstance(getCurrentSliceDBA());
-    	GKInstance newReleaseInstance = cloneReleaseInstance(releaseInstanceFromSlice, getSourceDBA());
-    	getSourceDBA().storeInstance(newReleaseInstance);
+        GKInstance releaseInstanceFromSlice = getMostRecentReleaseInstance(getCurrentSliceDBA());
+        GKInstance newReleaseInstance = cloneReleaseInstance(releaseInstanceFromSlice, getSourceDBA());
+        getSourceDBA().storeInstance(newReleaseInstance);
     }
     
     private GKInstance cloneReleaseInstance(GKInstance releaseInstance, MySQLAdaptor dba) throws Exception {
-    	GKInstance newReleaseInstance = new GKInstance(DBUtils.getSchemaClass(dba, ReactomeJavaConstants._Release));
-    	newReleaseInstance.setDbAdaptor(dba);
-    	newReleaseInstance.setAttributeValue(ReactomeJavaConstants.releaseDate, 
-			releaseInstance.getAttributeValue(ReactomeJavaConstants.releaseDate));
-    	newReleaseInstance.setAttributeValue(ReactomeJavaConstants.releaseNumber, 
-			releaseInstance.getAttributeValue(ReactomeJavaConstants.releaseNumber));
-    	InstanceDisplayNameGenerator.setDisplayName(newReleaseInstance);
-    	return newReleaseInstance;
+        GKInstance newReleaseInstance = new GKInstance(DBUtils.getSchemaClass(dba, ReactomeJavaConstants._Release));
+        newReleaseInstance.setDbAdaptor(dba);
+        newReleaseInstance.setAttributeValue(ReactomeJavaConstants.releaseDate,
+            releaseInstance.getAttributeValue(ReactomeJavaConstants.releaseDate));
+        newReleaseInstance.setAttributeValue(ReactomeJavaConstants.releaseNumber,
+            releaseInstance.getAttributeValue(ReactomeJavaConstants.releaseNumber));
+        InstanceDisplayNameGenerator.setDisplayName(newReleaseInstance);
+        return newReleaseInstance;
     }
 
     private void createAndStoreUpdateTrackerInstances(
         ComparisonType comparisonType, boolean uploadUpdateTrackerInstancesToSource) throws Exception {
 
-    	UpdateTracker.UpdateTrackerBuilder sourceUpdateTrackerBuilder =
-    		getUpdateTrackerBuilder(getSourceDBA());
+        UpdateTracker.UpdateTrackerBuilder sourceUpdateTrackerBuilder =
+            getUpdateTrackerBuilder(getSourceDBA());
         UpdateTracker.UpdateTrackerBuilder sliceUpdateTrackerBuilder =
             getUpdateTrackerBuilder(getCurrentSliceDBA());
 
