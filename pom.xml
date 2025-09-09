@@ -21,6 +21,11 @@
             <version>1.0.2</version>
         </dependency>
         <dependency>
+            <groupId>org.reactome</groupId>
+            <artifactId>curator-tool-ws</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
             <version>2.24.3</version>
