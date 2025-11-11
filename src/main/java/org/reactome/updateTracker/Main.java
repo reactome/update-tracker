@@ -17,10 +17,11 @@ public class Main {
         MySQLAdaptor currentSliceDBA = getCurrentSliceDBA();
         MySQLAdaptor previousSliceDBA = getPreviousSliceDBA();
         long personId = Long.parseLong(getConfigProps().getProperty("personId"));
-        boolean uploadUpdateTrackerInstanceToSource = Boolean.getBoolean(getConfigProps().getProperty("uploadToSource"));
+        boolean uploadUpdateTrackerInstanceToSource = Boolean.parseBoolean(getConfigProps().getProperty("uploadToSource"));
 
         UpdateTrackerHandler updateTrackerHandler =
             new UpdateTrackerHandler(sourceDBA, currentSliceDBA, previousSliceDBA, personId);
+
         updateTrackerHandler.handleUpdateTrackerInstances(uploadUpdateTrackerInstanceToSource);
     }
 
