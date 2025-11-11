@@ -18,17 +18,19 @@ public class DBUtils {
     private static Map<MySQLAdaptor, GKInstance> dbAdaptorToCreatedInstanceEdit = new HashMap<>();
 
     public static GKInstance getMostRecentReleaseInstance(MySQLAdaptor dbAdaptor) throws Exception {
+        final String exceptionMessage = "No release instance(s) from " + dbAdaptor;
+
         Collection<GKInstance> releaseInstances = dbAdaptor.fetchInstancesByClass(ReactomeJavaConstants._Release);
 
         if (releaseInstances == null || releaseInstances.isEmpty()) {
-            return null;
+            throw new RuntimeException(exceptionMessage);
         }
 
         return releaseInstances
             .stream()
             .sorted(Comparator.comparing(DBUtils::getReleaseVersion).reversed())
             .findFirst()
-            .orElseThrow(() -> new RuntimeException("No release instance(s) from " + dbAdaptor));
+            .orElseThrow(() -> new RuntimeException(exceptionMessage));
     }
 
     public static GKInstance getCreatedInstanceEdit(MySQLAdaptor dbAdaptor, long personDbId) throws Exception {
