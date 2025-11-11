@@ -4,27 +4,30 @@ import org.gk.model.GKInstance;
 import org.gk.model.ReactomeJavaConstants;
 import org.gk.persistence.MySQLAdaptor;
 import org.gk.schema.SchemaClass;
+import org.reactome.curation.model.SimpleInstance;
+import org.reactome.server.graph.domain.model.InstanceEdit;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.reactome.updateTracker.utils.DBUtils.getExtendedDisplayName;
 import static org.reactome.updateTracker.utils.DBUtils.getSchemaClass;
 
 /**
  * This class is used to model _UpdateTracker class. The constructor is private. The client should 
- * get the embedded UpateTrackerBuilder to construct UpdateTracker objects.
+ * get the embedded UpdateTrackerBuilder to construct UpdateTracker objects.
  * @author Joel Weiser (joel.weiser@oicr.on.ca)
  */
 public class UpdateTracker {
-    private GKInstance _Release;
+    private SimpleInstance _Release;
     private int releaseNumber;
     private Set<Action> actions;
-    private GKInstance updatedInstance;
-    private GKInstance createdInstanceEdit;
+    private SimpleInstance updatedInstance;
+    private InstanceEdit createdInstanceEdit;
 
-    private UpdateTracker(GKInstance _Release, int releaseNumber, GKInstance createdInstanceEdit,
-                          Set<Action> actions, GKInstance updatedInstance) {
+    private UpdateTracker(SimpleInstance _Release, int releaseNumber, InstanceEdit createdInstanceEdit,
+                          Set<Action> actions, SimpleInstance updatedInstance) {
         this._Release = _Release;
         this.releaseNumber = releaseNumber;
         this.createdInstanceEdit = createdInstanceEdit;
@@ -32,7 +35,7 @@ public class UpdateTracker {
         this.updatedInstance = updatedInstance;
     }
 
-    public GKInstance getReleaseInstance() {
+    public SimpleInstance getReleaseInstance() {
         return this._Release;
     }
 
@@ -40,7 +43,7 @@ public class UpdateTracker {
         return this.actions;
     }
 
-    public GKInstance getUpdatedInstance() {
+    public SimpleInstance getUpdatedInstance() {
         return this.updatedInstance;
     }
 
@@ -48,25 +51,16 @@ public class UpdateTracker {
         return getSchemaClass(dbAdaptor, "_UpdateTracker");
     }
 
-    public GKInstance createUpdateTrackerInstance(MySQLAdaptor dbAdaptor) throws Exception {
-        GKInstance updateTrackerInstance = new GKInstance(getUpdateTrackerSchemaClass(dbAdaptor));
+    public SimpleInstance createUpdateTrackerInstance() throws Exception {
+        SimpleInstance updateTrackerInstance = new SimpleInstance();
+        updateTrackerInstance.setDbId(-1L);
+        updateTrackerInstance.setDefaultPersonId(1551959L);
+        updateTrackerInstance.setSchemaClassName("UpdateTracker");
 
-        updateTrackerInstance.setDbAdaptor(dbAdaptor);
-
-        GKInstance releaseInstance = getReleaseInstance();
-        releaseInstance.setSchemaClass(dbAdaptor.getSchema().getClassByName(ReactomeJavaConstants._Release));
-        releaseInstance.setDbAdaptor(dbAdaptor);
-        updateTrackerInstance.setAttributeValue(ReactomeJavaConstants._release, releaseInstance);
-
-        updateTrackerInstance.setAttributeValue("action", getActionsAsStrings());
-        GKInstance updatedInstance = getUpdatedInstance();
-        updatedInstance.setSchemaClass(dbAdaptor.getSchema().getClassByName(getSchemaClassName(updatedInstance)));
-        updateTrackerInstance.setAttributeValue("updatedInstance", getUpdatedInstance());
-
-        GKInstance createdInstanceEdit = getCreatedInstanceEdit();
-        createdInstanceEdit.setSchemaClass(dbAdaptor.getSchema().getClassByName(ReactomeJavaConstants.InstanceEdit));
-        createdInstanceEdit.setDbAdaptor(dbAdaptor);
-        updateTrackerInstance.setAttributeValue(ReactomeJavaConstants.created, createdInstanceEdit);
+        updateTrackerInstance.setAttribute("release", getReleaseInstance());
+        updateTrackerInstance.setAttribute("action", getActionsAsStrings());
+        updateTrackerInstance.setAttribute("updatedInstance", getUpdatedInstance());
+        updateTrackerInstance.setAttribute(ReactomeJavaConstants.created, getCreatedInstanceEdit());
 
         updateTrackerInstance.setDisplayName(generateDisplayName());
 
@@ -77,7 +71,7 @@ public class UpdateTracker {
     private String generateDisplayName() {
         return String.format(
             "Update Tracker - %s - v%d:%s",
-            getUpdatedInstance().getExtendedDisplayName(),
+            getExtendedDisplayName(getUpdatedInstance()),
             getReleaseNumber(),
             getActionsAsStrings()
         );
@@ -89,12 +83,12 @@ public class UpdateTracker {
             .collect(Collectors.toList());
     }
 
-    private GKInstance getCreatedInstanceEdit() {
+    private InstanceEdit getCreatedInstanceEdit() {
         return this.createdInstanceEdit;
     }
 
     private String getSchemaClassName(GKInstance instance) {
-        return updatedInstance.getSchemClass().getName();
+        return updatedInstance.getSchemaClassName();
     }
 
     private int getReleaseNumber() {
@@ -108,15 +102,15 @@ public class UpdateTracker {
      */
     public static class UpdateTrackerBuilder {
         private Integer releaseNumber;
-        private GKInstance _Release;
-        private GKInstance createdInstanceEdit;
+        private SimpleInstance _Release;
+        private InstanceEdit createdInstanceEdit;
 
-        public static UpdateTrackerBuilder createUpdateTrackerBuilder(GKInstance _Release,
-                                                                      GKInstance createdInstanceEdit) {
+        public static UpdateTrackerBuilder createUpdateTrackerBuilder(SimpleInstance _Release,
+                                                                      InstanceEdit createdInstanceEdit) {
             return new UpdateTrackerBuilder(_Release, createdInstanceEdit);
         }
 
-        private UpdateTrackerBuilder(GKInstance _Release, GKInstance createdInstanceEdit) {
+        private UpdateTrackerBuilder(SimpleInstance _Release, InstanceEdit createdInstanceEdit) {
             this._Release = _Release;
             this.createdInstanceEdit = createdInstanceEdit;
             this.releaseNumber = getReleaseNumber();
@@ -125,17 +119,16 @@ public class UpdateTracker {
         private int getReleaseNumber() {
             if (this.releaseNumber == null) {
                 try {
-//                    System.out.println(this._Release);
-                    this.releaseNumber = (int) this._Release.getAttributeValue(ReactomeJavaConstants.releaseNumber);
+                    this.releaseNumber = (int) this._Release.getAttribute(ReactomeJavaConstants.releaseNumber);
                 } catch (Exception e) {
                     throw new RuntimeException("Unable to get release number from " +
-                        (this._Release != null ? this._Release.getExtendedDisplayName() : null), e);
+                        (this._Release != null ? getExtendedDisplayName(this._Release) : null), e);
                 }
             }
             return this.releaseNumber;
         }
 
-        public UpdateTracker build(GKInstance updatedInstance, Set<Action> actions) {
+        public UpdateTracker build(SimpleInstance updatedInstance, Set<Action> actions) {
             return new UpdateTracker(
                 this._Release, this.releaseNumber, this.createdInstanceEdit, actions, updatedInstance);
         }
