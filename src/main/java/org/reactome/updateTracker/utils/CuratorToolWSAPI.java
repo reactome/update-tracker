@@ -50,10 +50,6 @@ public class CuratorToolWSAPI {
 			post.setHeader("Authorization", "Bearer " + getJwtToken());
 
 			String simpleInstanceJSON = mapper.writeValueAsString(simpleInstance);
-			System.out.println(simpleInstance);
-			System.out.println(simpleInstanceJSON);
-
-
 
 			post.setEntity(new StringEntity(simpleInstanceJSON));
 			HttpResponse response = httpClient.execute(post);
@@ -77,7 +73,6 @@ public class CuratorToolWSAPI {
 				throw new RuntimeException("Failed : HTTP error code : " + statusCode);
 			}
 			String json = EntityUtils.toString(response.getEntity());
-			System.out.println("JSON: " + json);
 			ObjectMapper objectMapper = new ObjectMapper();
 			return objectMapper.readValue(json, SimpleInstance.class);
 		}
@@ -89,17 +84,14 @@ public class CuratorToolWSAPI {
 	public Person fetchPersonInstance(long personDbId) {
 		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 			HttpGet request = new HttpGet(FIND_DB_OBJ_BY_DB_ID + personDbId);
-			System.out.println(FIND_DB_OBJ_BY_DB_ID + personDbId);
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Authorization", "Bearer " + getJwtToken());
 			HttpResponse response = httpClient.execute(request);
-			System.out.println(response);
 			int statusCode = response.getStatusLine().getStatusCode();
 			if (statusCode != 200) {
 				throw new RuntimeException("Failed : HTTP error code : " + statusCode);
 			}
 			String json = EntityUtils.toString(response.getEntity());
-			System.out.println("JSON: " + json);
 			ObjectMapper objectMapper = new ObjectMapper();
 			return objectMapper.readValue(json, Person.class);
 		}
