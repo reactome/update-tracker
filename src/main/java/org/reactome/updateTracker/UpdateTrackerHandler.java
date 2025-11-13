@@ -49,7 +49,7 @@ public class UpdateTrackerHandler {
         dbAdaptorMapBuilder.setNewerDbAdaptor(currentSliceDBA);
         dbAdaptorMapBuilder.setTargetDbAdaptor(sourceDBA);
 
-        curatorToolWSAPI = new CuratorToolWSAPI();
+        this.curatorToolWSAPI = new CuratorToolWSAPI();
 
         this.dbAdaptorMap = dbAdaptorMapBuilder.build();
         this.personId = personId;
@@ -62,8 +62,10 @@ public class UpdateTrackerHandler {
             logger.info("Storing release instance in source database");
             storeReleaseInstanceInSourceDatabase();
         }
+
         logger.info("Creating event update tracker instances");
         createAndStoreUpdateTrackerInstances(ComparisonType.EVENT, uploadUpdateTrackerInstancesToSource);
+
         logger.info("Creating physical entity update tracker instances");
         createAndStoreUpdateTrackerInstances(ComparisonType.PHYSICAL_ENTITY, uploadUpdateTrackerInstancesToSource);
     }
@@ -72,7 +74,8 @@ public class UpdateTrackerHandler {
         GKInstance releaseInstanceFromSlice = getMostRecentReleaseInstance(getCurrentSliceDBA());
         releaseInstance = cloneReleaseInstance(releaseInstanceFromSlice);
 
-        curatorToolWSAPI.commit(releaseInstance);
+        SimpleInstance committedReleaseInstance = curatorToolWSAPI.commit(releaseInstance);
+        releaseInstance.setDbId(committedReleaseInstance.getDbId());
     }
     
     private SimpleInstance cloneReleaseInstance(GKInstance releaseInstance) throws Exception {
@@ -186,8 +189,6 @@ public class UpdateTrackerHandler {
     }
 
     private void commitToSourceDB(List<SimpleInstance> instances) throws Exception {
-
-
         if (instances == null || instances.size() == 0)
             return; // Nothing to do.
 
