@@ -79,7 +79,7 @@ public class UpdateTrackerHandler {
         SimpleInstance newReleaseInstanceGraph = GraphDBConverter.convertGKInstanceToSimpleInstance(
             releaseInstance
         );
-        newReleaseInstanceGraph.setDefaultPersonId(1551959L);
+        newReleaseInstanceGraph.setDefaultPersonId(getPersonId());
 
         return newReleaseInstanceGraph;
     }
@@ -217,7 +217,8 @@ public class UpdateTrackerHandler {
     }
 
     private UpdateTracker.UpdateTrackerBuilder getUpdateTrackerBuilder() throws Exception {
-        return UpdateTracker.UpdateTrackerBuilder.createUpdateTrackerBuilder(releaseInstance, getCreatedInstanceEdit());
+        return UpdateTracker.UpdateTrackerBuilder.createUpdateTrackerBuilder(
+            releaseInstance, getPersonId(), getCreatedInstanceEdit());
     }
 
     private InstanceEdit getCreatedInstanceEdit() {

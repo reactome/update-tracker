@@ -7,6 +7,7 @@ import org.gk.schema.SchemaClass;
 import org.reactome.curation.model.SimpleInstance;
 import org.reactome.server.graph.domain.model.InstanceEdit;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -22,14 +23,16 @@ import static org.reactome.updateTracker.utils.DBUtils.getSchemaClass;
 public class UpdateTracker {
     private SimpleInstance _Release;
     private int releaseNumber;
+    private long personId;
     private Set<Action> actions;
     private SimpleInstance updatedInstance;
     private InstanceEdit createdInstanceEdit;
 
-    private UpdateTracker(SimpleInstance _Release, int releaseNumber, InstanceEdit createdInstanceEdit,
+    private UpdateTracker(SimpleInstance _Release, int releaseNumber, long personId, InstanceEdit createdInstanceEdit,
                           Set<Action> actions, SimpleInstance updatedInstance) {
         this._Release = _Release;
         this.releaseNumber = releaseNumber;
+        this.personId = personId;
         this.createdInstanceEdit = createdInstanceEdit;
         this.actions = actions;
         this.updatedInstance = updatedInstance;
@@ -51,16 +54,16 @@ public class UpdateTracker {
         return getSchemaClass(dbAdaptor, "_UpdateTracker");
     }
 
-    public SimpleInstance createUpdateTrackerInstance() throws Exception {
+    public SimpleInstance createUpdateTrackerInstance() {
         SimpleInstance updateTrackerInstance = new SimpleInstance();
         updateTrackerInstance.setDbId(-1L);
-        updateTrackerInstance.setDefaultPersonId(1551959L);
+        updateTrackerInstance.setDefaultPersonId(getPersonId());
         updateTrackerInstance.setSchemaClassName("UpdateTracker");
 
         updateTrackerInstance.setAttribute("release", getReleaseInstance());
         updateTrackerInstance.setAttribute("action", getActionsAsStrings());
-        updateTrackerInstance.setAttribute("updatedInstance", getUpdatedInstance());
-        updateTrackerInstance.setAttribute(ReactomeJavaConstants.created, getCreatedInstanceEdit());
+        updateTrackerInstance.setAttribute("updatedInstance", Collections.singletonList(getUpdatedInstance()));
+        //updateTrackerInstance.setAttribute(ReactomeJavaConstants.created, getCreatedInstanceEdit());
 
         updateTrackerInstance.setDisplayName(generateDisplayName());
 
@@ -83,6 +86,10 @@ public class UpdateTracker {
             .collect(Collectors.toList());
     }
 
+    private long getPersonId() {
+        return this.personId;
+    }
+
     private InstanceEdit getCreatedInstanceEdit() {
         return this.createdInstanceEdit;
     }
@@ -102,16 +109,19 @@ public class UpdateTracker {
      */
     public static class UpdateTrackerBuilder {
         private Integer releaseNumber;
+        private long personId;
         private SimpleInstance _Release;
         private InstanceEdit createdInstanceEdit;
 
         public static UpdateTrackerBuilder createUpdateTrackerBuilder(SimpleInstance _Release,
+                                                                      long personId,
                                                                       InstanceEdit createdInstanceEdit) {
-            return new UpdateTrackerBuilder(_Release, createdInstanceEdit);
+            return new UpdateTrackerBuilder(_Release, personId, createdInstanceEdit);
         }
 
-        private UpdateTrackerBuilder(SimpleInstance _Release, InstanceEdit createdInstanceEdit) {
+        private UpdateTrackerBuilder(SimpleInstance _Release, long personId, InstanceEdit createdInstanceEdit) {
             this._Release = _Release;
+            this.personId = personId;
             this.createdInstanceEdit = createdInstanceEdit;
             this.releaseNumber = getReleaseNumber();
         }
@@ -128,9 +138,13 @@ public class UpdateTracker {
             return this.releaseNumber;
         }
 
+        private long getPersonId() {
+            return this.personId;
+        }
+
         public UpdateTracker build(SimpleInstance updatedInstance, Set<Action> actions) {
             return new UpdateTracker(
-                this._Release, this.releaseNumber, this.createdInstanceEdit, actions, updatedInstance);
+                this._Release, this.releaseNumber, this.personId, this.createdInstanceEdit, actions, updatedInstance);
         }
     }
 }
