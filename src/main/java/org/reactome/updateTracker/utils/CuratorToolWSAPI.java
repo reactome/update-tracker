@@ -37,7 +37,7 @@ public class CuratorToolWSAPI {
 		System.out.println(this.jwtToken);
 	}
 
-	public void commit(SimpleInstance simpleInstance) throws JsonProcessingException {
+	public SimpleInstance commit(SimpleInstance simpleInstance) throws JsonProcessingException {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.addMixIn(org.reactome.curation.model.SimpleInstance.class, DatabaseObjectMixin.class);
 		mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
@@ -57,6 +57,8 @@ public class CuratorToolWSAPI {
 			if (statusCode != 200) {
 				throw new RuntimeException("Failed : HTTP error code : " + statusCode);
 			}
+
+			return mapper.readValue(EntityUtils.toString(response.getEntity()), SimpleInstance.class);
 		} catch (IOException e) {
 			throw new RuntimeException("Error committing simple instance " + simpleInstance + " to API", e);
 		}
