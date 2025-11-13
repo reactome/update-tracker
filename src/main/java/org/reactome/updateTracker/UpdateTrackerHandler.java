@@ -136,7 +136,7 @@ public class UpdateTrackerHandler {
 
                 if (uploadUpdateTrackerInstancesToSource) {
                     logger.info("Adding toBeUploadedToSrcDBA " + currentInstance);
-                    SimpleInstance sourceInstance = curatorToolWSAPI.findDatabaseObjectByDbId(currentInstance.getDBID());
+                    SimpleInstance sourceInstance = createSourceShellInstance(currentInstance);
                     SimpleInstance updateTracker = sourceUpdateTrackerBuilder
                         .build(sourceInstance, actions)
                         .createUpdateTrackerInstance();
@@ -152,6 +152,15 @@ public class UpdateTrackerHandler {
             }
         }
         commitToSourceDB(toBeUploadedToSrcDBA);
+    }
+
+    private SimpleInstance createSourceShellInstance(GKInstance sourceInstance) {
+        SimpleInstance sourceShellInstance = new SimpleInstance();
+        sourceShellInstance.setDbId(sourceInstance.getDBID());
+        sourceShellInstance.setDisplayName(sourceInstance.getDisplayName());
+        sourceShellInstance.setSchemaClassName(sourceInstance.getSchemClass().getName());
+        sourceShellInstance.setDefaultPersonId(getPersonId());
+        return sourceShellInstance;
     }
 
     private InstanceComparer getInstanceComparer(ComparisonType comparisonType, Map.Entry<GKInstance, GKInstance> equivalentInstancePair) throws Exception {
