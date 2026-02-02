@@ -175,7 +175,7 @@ public class UpdateTrackerHandler {
 
     private EventComparer getEventComparer() throws Exception {
         if (this.eventComparer == null) {
-            this.eventComparer = new EventComparer(new EventMatcher(getPreviousSliceDBA(), getCurrentSliceDBA(), getSourceDBA()));
+            this.eventComparer = new EventComparer(new EventMatcher(getPreviousSliceDBA(), getCurrentSliceDBA()));
         }
         return this.eventComparer;
     }
@@ -186,13 +186,11 @@ public class UpdateTrackerHandler {
         if (comparisonType == ComparisonType.EVENT) {
             instanceMatcher = new EventMatcher(
                 getDbAdaptorMap().getOlderDbAdaptor(),
-                getDbAdaptorMap().getNewerDbAdaptor(),
-                getDbAdaptorMap().getTargetDbAdaptor());
+                getDbAdaptorMap().getNewerDbAdaptor());
         } else {
             instanceMatcher = new PhysicalEntityMatcher(
                 getDbAdaptorMap().getOlderDbAdaptor(),
-                getDbAdaptorMap().getNewerDbAdaptor(),
-                getDbAdaptorMap().getTargetDbAdaptor());
+                getDbAdaptorMap().getNewerDbAdaptor());
         }
         return instanceMatcher;
     }

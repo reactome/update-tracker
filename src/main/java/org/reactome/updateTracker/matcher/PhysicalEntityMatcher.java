@@ -14,10 +14,10 @@ import java.util.stream.Collectors;
  */
 public class PhysicalEntityMatcher extends InstanceMatcher {
 
-    public PhysicalEntityMatcher(MySQLAdaptor previousDBA, MySQLAdaptor currentDBA, MySQLAdaptor targetDBA)
+    public PhysicalEntityMatcher(MySQLAdaptor previousDBA, MySQLAdaptor currentDBA)
         throws Exception {
 
-        super(previousDBA, currentDBA, targetDBA);
+        super(previousDBA, currentDBA);
     }
 
     @Override

@@ -13,8 +13,8 @@ import java.util.stream.Collectors;
  */
 public class EventMatcher extends InstanceMatcher {
 
-    public EventMatcher(MySQLAdaptor previousDBA, MySQLAdaptor currentDBA, MySQLAdaptor targetDBA) throws Exception {
-        super(previousDBA, currentDBA, targetDBA);
+    public EventMatcher(MySQLAdaptor previousDBA, MySQLAdaptor currentDBA) throws Exception {
+        super(previousDBA, currentDBA);
     }
 
     @Override
