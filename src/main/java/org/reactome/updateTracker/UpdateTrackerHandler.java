@@ -74,8 +74,8 @@ public class UpdateTrackerHandler {
         GKInstance releaseInstanceFromSlice = getMostRecentReleaseInstance(getCurrentSliceDBA());
         releaseInstance = cloneReleaseInstance(releaseInstanceFromSlice);
 
-        SimpleInstance committedReleaseInstance = curatorToolWSAPI.commit(releaseInstance);
-        releaseInstance.setDbId(committedReleaseInstance.getDbId());
+        long committedDbId = curatorToolWSAPI.commit(releaseInstance).getDbId();
+        releaseInstance.setDbId(committedDbId);
     }
     
     private SimpleInstance cloneReleaseInstance(GKInstance releaseInstance) throws Exception {
