@@ -215,11 +215,11 @@ public class EventComparer extends InstanceComparer {
     }
 
     private Map<GKInstance, GKInstance> getPreviousToCurrentInstanceMap() {
-        return this.eventMatcher.getCurationPreviousToCurrentInstanceMap();
+        return this.eventMatcher.getPreviousToCurrentInstanceMap();
     }
 
     private Map<GKInstance, GKInstance> getCurrentToPreviousInstanceMap() {
-        return this.eventMatcher.getCurationCurrentToPreviousInstances();
+        return this.eventMatcher.getCurrentToPreviousInstanceMap();
     }
 
     private List<Action> getSummationActions(GKInstance earlierEvent, GKInstance newEvent) throws Exception {
