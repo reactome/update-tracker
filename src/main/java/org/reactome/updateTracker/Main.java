@@ -13,20 +13,15 @@ import java.util.Properties;
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        MySQLAdaptor sourceDBA = getSourceDBA();
         MySQLAdaptor currentSliceDBA = getCurrentSliceDBA();
         MySQLAdaptor previousSliceDBA = getPreviousSliceDBA();
         long personId = Long.parseLong(getConfigProps().getProperty("personId"));
         boolean uploadUpdateTrackerInstanceToSource = Boolean.parseBoolean(getConfigProps().getProperty("uploadToSource"));
 
         UpdateTrackerHandler updateTrackerHandler =
-            new UpdateTrackerHandler(sourceDBA, currentSliceDBA, previousSliceDBA, personId);
+            new UpdateTrackerHandler(currentSliceDBA, previousSliceDBA, personId);
 
         updateTrackerHandler.handleUpdateTrackerInstances(uploadUpdateTrackerInstanceToSource);
-    }
-
-    private static MySQLAdaptor getSourceDBA() throws SQLException, IOException {
-        return getDBA("curator");
     }
 
     private static MySQLAdaptor getCurrentSliceDBA() throws SQLException, IOException {
