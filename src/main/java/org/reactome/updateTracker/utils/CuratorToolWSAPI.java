@@ -3,12 +3,14 @@ package org.reactome.updateTracker.utils;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -18,6 +20,7 @@ import org.reactome.curation.user.model.User;
 import org.reactome.server.graph.domain.model.Person;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author Joel Weiser (joel.weiser@oicr.on.ca)
@@ -28,18 +31,19 @@ public class CuratorToolWSAPI {
 	private static final String AUTH_URL = HOST_URL + "authenticate";
 	private static final String FIND_BY_DB_ID = HOST_URL + "curation/findByDbId/";
 	private static final String FIND_DB_OBJ_BY_DB_ID = HOST_URL + "curation/findDatabaseObjectByDbId/";
+	private static final String FIND_DB_OBJS_BY_DB_IDS = HOST_URL + "curation/findByDbIds/";
 	private static final String COMMIT_URL = HOST_URL + "curation/commit";
 
 	private String jwtToken;
 
 	public CuratorToolWSAPI() {
 		this.jwtToken = this.fetchJwtToken("test", "password");
-		System.out.println(this.jwtToken);
+		System.out.println("JWT token: " + this.jwtToken);
 	}
 
 	public SimpleInstance commit(SimpleInstance simpleInstance) throws JsonProcessingException {
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.addMixIn(org.reactome.curation.model.SimpleInstance.class, DatabaseObjectMixin.class);
+	//	mapper.addMixIn(org.reactome.curation.model.SimpleInstance.class, DatabaseObjectMixin.class);
 		mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 		mapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 		mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
@@ -64,9 +68,40 @@ public class CuratorToolWSAPI {
 		}
 	}
 
-	public SimpleInstance findDatabaseObjectByDbId(long dbId) {
+	public List<SimpleInstance> findDatabaseObjectsByDbIds(List<Long> dbIds) {
 		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-			HttpGet request = new HttpGet(FIND_BY_DB_ID + dbId);
+			HttpPost post = new HttpPost(FIND_DB_OBJS_BY_DB_IDS);
+			post.setHeader("Content-Type", "application/json");
+			post.setHeader("Accept", "application/json");
+			post.setHeader("Authorization", "Bearer " + getJwtToken());
+
+			ObjectMapper mapper = new ObjectMapper();
+			String jsonPayload = mapper.writeValueAsString(dbIds);
+
+			System.out.println(jsonPayload);
+
+			post.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
+			HttpResponse response = httpClient.execute(post);
+			int statusCode = response.getStatusLine().getStatusCode();
+
+			String responseBody = response.getEntity() != null
+				? EntityUtils.toString(response.getEntity())
+				: "<no body>";
+
+			if (statusCode != 200) {
+				throw new RuntimeException("Failed : HTTP error code : " + statusCode + "\nResponse body: " + responseBody);
+			}
+
+			return mapper.readValue(EntityUtils.toString(response.getEntity()), new TypeReference<List<SimpleInstance>>(){});
+		} catch (IOException e) {
+			throw new RuntimeException("Error retrieving dbIds " + dbIds + " from API: ", e);
+		}
+	}
+
+	public SimpleInstance findDatabaseObjectByDbId(long dbId) {
+		System.out.println("DbId: " + dbId);
+		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+			HttpGet request = new HttpGet(FIND_DB_OBJ_BY_DB_ID + dbId);
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Authorization", "Bearer " + getJwtToken());
 			HttpResponse response = httpClient.execute(request);
@@ -75,6 +110,9 @@ public class CuratorToolWSAPI {
 				throw new RuntimeException("Failed : HTTP error code : " + statusCode);
 			}
 			String json = EntityUtils.toString(response.getEntity());
+			if (json == null || json.isEmpty()) {
+				return null;
+			}
 			ObjectMapper objectMapper = new ObjectMapper();
 			return objectMapper.readValue(json, SimpleInstance.class);
 		}
