@@ -5,7 +5,6 @@ import org.gk.model.InstanceDisplayNameGenerator;
 import org.gk.model.ReactomeJavaConstants;
 import org.gk.persistence.MySQLAdaptor;
 import org.gk.schema.SchemaClass;
-import org.reactome.curation.model.SimpleInstance;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -58,8 +57,12 @@ public class DBUtils {
         return dbAdaptor.getSchema().getClassByName(className);
     }
 
-    public static String getExtendedDisplayName(SimpleInstance simpleInstance) {
-        return "[" + simpleInstance.getSchemaClassName() + ":" + simpleInstance.getDbId() + "] " + simpleInstance.getDisplayName();
+    public static String getSchemaClassName(GKInstance gkInstance) {
+        String schemaClassName = gkInstance.getSchemClass().getName();
+        if (schemaClassName.startsWith("_")) {
+            return schemaClassName.replaceFirst("_", "");
+        }
+        return schemaClassName;
     }
 
     private static GKInstance getPersonInstance(MySQLAdaptor dbAdaptor, long personId) throws Exception {
