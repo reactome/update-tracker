@@ -38,7 +38,6 @@ public class CuratorToolWSAPI {
 
 	public CuratorToolWSAPI() {
 		this.jwtToken = this.fetchJwtToken("test", "password");
-		System.out.println("JWT token: " + this.jwtToken);
 	}
 
 	public SimpleInstance commit(SimpleInstance simpleInstance) throws JsonProcessingException {
@@ -99,7 +98,6 @@ public class CuratorToolWSAPI {
 	}
 
 	public SimpleInstance findDatabaseObjectByDbId(long dbId) {
-		System.out.println("DbId: " + dbId);
 		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 			HttpGet request = new HttpGet(FIND_DB_OBJ_BY_DB_ID + dbId);
 			request.setHeader("Accept", "application/json");
