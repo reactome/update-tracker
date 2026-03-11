@@ -1,5 +1,9 @@
 package org.reactome.updateTracker;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
 import java.util.*;
 
 import org.apache.logging.log4j.LogManager;
@@ -8,6 +12,8 @@ import org.gk.model.GKInstance;
 
 import org.gk.persistence.MySQLAdaptor;
 import org.reactome.curation.model.SimpleInstance;
+import org.reactome.server.graph.domain.model.InstanceEdit;
+import org.reactome.server.graph.domain.model.Person;
 import org.reactome.updateTracker.comparer.EventComparer;
 import org.reactome.updateTracker.comparer.InstanceComparer;
 import org.reactome.updateTracker.comparer.physicalentity.PhysicalEntityComparerFactory;
@@ -32,13 +38,15 @@ public class UpdateTrackerHandler {
 
     private DbAdaptorMap dbAdaptorMap;
     private long personId;
-    private GKInstance createdInstanceEdit;
+
+    private SimpleInstance releaseInstance;
+    private InstanceEdit createdInstanceEdit;
 
     private CuratorToolWSAPI curatorToolWSAPI;
 
     public UpdateTrackerHandler(
         MySQLAdaptor currentSliceDBA, MySQLAdaptor previousSliceDBA, long personId
-    ) throws Exception {
+    ) {
         DbAdaptorMap.DbAdaptorMapBuilder dbAdaptorMapBuilder = new DbAdaptorMap.DbAdaptorMapBuilder();
         dbAdaptorMapBuilder.setOlderDbAdaptor(previousSliceDBA);
         dbAdaptorMapBuilder.setNewerDbAdaptor(currentSliceDBA);
@@ -47,15 +55,14 @@ public class UpdateTrackerHandler {
 
         this.dbAdaptorMap = dbAdaptorMapBuilder.build();
         this.personId = personId;
-        this.createdInstanceEdit = DBUtils.getCreatedInstanceEdit(currentSliceDBA, personId);
-
+        this.createdInstanceEdit = createInstanceEdit(personId);
     }
 
     public void handleUpdateTrackerInstances(boolean uploadUpdateTrackerInstancesToSource) throws Exception {
-//        if (uploadUpdateTrackerInstancesToSource) {
-//            logger.info("Storing release instance in source database");
-//            storeReleaseInstanceInSourceDatabase();
-//        }
+        if (uploadUpdateTrackerInstancesToSource) {
+            logger.info("Storing release instance in source database");
+            storeReleaseInstanceInSourceDatabase();
+        }
 
         logger.info("Creating event update tracker instances");
         createAndStoreUpdateTrackerInstances(ComparisonType.EVENT, uploadUpdateTrackerInstancesToSource);
@@ -64,19 +71,28 @@ public class UpdateTrackerHandler {
         createAndStoreUpdateTrackerInstances(ComparisonType.PHYSICAL_ENTITY, uploadUpdateTrackerInstancesToSource);
     }
     
-//    private void storeReleaseInstanceInSourceDatabase() throws Exception {
-//        GKInstance releaseInstanceFromSlice = getMostRecentReleaseInstance(getCurrentSliceDBA());
-//        releaseInstance = cloneReleaseInstance(releaseInstanceFromSlice);
-//
-//        SimpleInstance committedReleaseInstance = curatorToolWSAPI.commit(releaseInstance);
-//        releaseInstance.setDbId(committedReleaseInstance.getDbId());
-//    }
+    private void storeReleaseInstanceInSourceDatabase() throws Exception {
+        GKInstance releaseInstanceFromSlice = getMostRecentReleaseInstance(getCurrentSliceDBA());
+        releaseInstance = cloneReleaseInstance(releaseInstanceFromSlice);
+        SimpleInstance committedReleaseInstance = curatorToolWSAPI.commit(releaseInstance);
+        releaseInstance.setDbId(committedReleaseInstance.getDbId());
+    }
+
+    private SimpleInstance cloneReleaseInstance(GKInstance releaseInstance) throws Exception {
+        SimpleInstance newReleaseInstanceGraph = GraphDBConverter.convertGKInstanceToSimpleInstance(
+            releaseInstance, getPersonId()
+        );
+        newReleaseInstanceGraph.setDbId(-1L);
+        newReleaseInstanceGraph.setCreated(getCreatedInstanceEdit());
+        newReleaseInstanceGraph.setDefaultPersonId(getPersonId());
+
+        return newReleaseInstanceGraph;
+    }
 
     private void createAndStoreUpdateTrackerInstances(
         ComparisonType comparisonType, boolean uploadUpdateTrackerInstancesToSource) throws Exception {
 
-        UpdateTracker.UpdateTrackerBuilder sliceUpdateTrackerBuilder =
-            getUpdateTrackerBuilder();
+        UpdateTracker.UpdateTrackerBuilder sliceUpdateTrackerBuilder = getUpdateTrackerBuilder();
 
         InstanceMatcher instanceMatcher = getInstanceMatcher(comparisonType);
 
@@ -85,7 +101,7 @@ public class UpdateTrackerHandler {
             instanceMatcher.getCurrentToPreviousInstanceMap().entrySet();
 
         logger.info("Instance pairs size: " + equivalentInstancePairs.size());
-        //List<SimpleInstance> toBeUploadedToSrcDBA = new ArrayList<>();
+        List<SimpleInstance> toBeUploadedToSrcDBA = new ArrayList<>();
         for (Map.Entry<GKInstance, GKInstance> equivalentInstancePair : equivalentInstancePairs) {
             Set<Action> actions = getInstanceComparer(comparisonType, equivalentInstancePair)
                 .getChanges(equivalentInstancePair);
@@ -104,13 +120,17 @@ public class UpdateTrackerHandler {
                 if (uploadUpdateTrackerInstancesToSource) {
                     logger.info("Adding toBeUploadedToSrcDBA " + currentInstance);
 
-                    SimpleInstance updateTracker = GraphDBConverter.convertGKInstanceToSimpleInstance(updateTrackerGKInstance);
-                    commitToSourceDB(updateTracker);
-                    //toBeUploadedToSrcDBA.add(updateTracker);
+                    SimpleInstance updateTracker = GraphDBConverter.convertGKInstanceToSimpleInstance(
+                        updateTrackerGKInstance, getPersonId());
+                    updateTracker.setDbId(-1L);
+                    updateTracker.setAttribute("release", releaseInstance);
+                    updateTracker.setCreated(getCreatedInstanceEdit());
+
+                    toBeUploadedToSrcDBA.add(updateTracker);
                 }
             }
         }
-        //commitToSourceDB(toBeUploadedToSrcDBA);
+        commitToSourceDB(toBeUploadedToSrcDBA);
     }
 
     private InstanceComparer getInstanceComparer(ComparisonType comparisonType, Map.Entry<GKInstance, GKInstance> equivalentInstancePair) throws Exception {
@@ -176,15 +196,39 @@ public class UpdateTrackerHandler {
         return this.personId;
     }
 
+    private InstanceEdit getCreatedInstanceEdit() {
+        return this.createdInstanceEdit;
+    }
+
     private UpdateTracker.UpdateTrackerBuilder getUpdateTrackerBuilder() throws Exception {
         GKInstance releaseInstance = getMostRecentReleaseInstance(getCurrentSliceDBA());
 
         return UpdateTracker.UpdateTrackerBuilder.createUpdateTrackerBuilder(
-            releaseInstance, getPersonId(), getCreatedInstanceEdit());
+            releaseInstance, getPersonId(), DBUtils.getCreatedInstanceEdit(getCurrentSliceDBA(), personId)
+        );
     }
 
-    private GKInstance getCreatedInstanceEdit() {
-        return this.createdInstanceEdit;
+    private InstanceEdit createInstanceEdit(long personDbId) {
+        Person person = curatorToolWSAPI.fetchPersonInstance(personDbId);
+        if (person == null) {
+            logger.error("Cannot find Person with dbId: " + personDbId);
+            throw new RuntimeException("Person " + personDbId + " not found");
+        } else {
+            InstanceEdit ie = new InstanceEdit();
+            ie.setAuthor(Collections.singletonList(person));
+            ie.setDateTime(this.getDateTime());
+            String personDisplayName = person.getDisplayName();
+            String displayName = personDisplayName + ", " + ie.getDateTime().split(" ")[0];
+            ie.setDisplayName(displayName);
+
+            return ie;
+        }
+    }
+
+    private String getDateTime() {
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("GMT"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return now.format(formatter);
     }
 
     private static class DbAdaptorMap {

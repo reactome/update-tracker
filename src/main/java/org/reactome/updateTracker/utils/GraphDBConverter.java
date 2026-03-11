@@ -14,15 +14,15 @@ import static org.reactome.updateTracker.utils.DBUtils.getSchemaClassName;
  * Created 9/9/2025
  */
 public class GraphDBConverter {
-	public static SimpleInstance convertGKInstanceToSimpleInstance(GKInstance gkInstance) throws Exception {
-		return convertGKInstanceToSimpleInstance(gkInstance, new HashMap<>());
+	public static SimpleInstance convertGKInstanceToSimpleInstance(GKInstance gkInstance, long personId) throws Exception {
+		return convertGKInstanceToSimpleInstance(gkInstance, personId, new HashMap<>());
 	}
 
 	private static SimpleInstance convertGKInstanceToSimpleInstance(
 		GKInstance gkInstance,
+		long personId,
 		Map<Long, SimpleInstance> visited) throws Exception {
 
-		final long personId = 1551959L;
 		if (gkInstance == null) {
 			return null;
 		}
@@ -34,6 +34,7 @@ public class GraphDBConverter {
 		}
 
 		SimpleInstance simpleInstance = new SimpleInstance();
+
 		simpleInstance.setDbId(dbId);
 		simpleInstance.setDisplayName(gkInstance.getDisplayName());
 		simpleInstance.setSchemaClassName(getSchemaClassName(gkInstance));
@@ -54,8 +55,6 @@ public class GraphDBConverter {
 				continue;
 			}
 
-
-
 			if (attribute.isInstanceTypeAttribute()) {
 
 				if (!attribute.isMultiple()) {
@@ -65,19 +64,14 @@ public class GraphDBConverter {
 
 					SimpleInstance converted = fetchFromGraphDb(attributeValue);
 					if (converted == null) {
-						converted = convertGKInstanceToSimpleInstance(attributeValue, visited);
+						converted = convertGKInstanceToSimpleInstance(attributeValue, personId, visited);
 					}
 
-					if (!attribute.getName().equals(ReactomeJavaConstants._release)) {
-						if (!attribute.getName().equals("updatedInstance")) {
-							simpleInstance.setAttribute(attribute.getName(), converted);
-						} else {
-							simpleInstance.setAttribute(attribute.getName(), Collections.singletonList(converted));
-						}
+					if (!attribute.getName().equals("updatedInstance")) {
+						simpleInstance.setAttribute(attribute.getName(), converted);
 					} else {
-						simpleInstance.setAttribute("release", converted);
+						simpleInstance.setAttribute(attribute.getName(), Collections.singletonList(converted));
 					}
-
 				} else {
 
 					List<GKInstance> attributeValues =
@@ -88,14 +82,9 @@ public class GraphDBConverter {
 					for (GKInstance attributeValue : attributeValues) {
 						SimpleInstance converted = fetchFromGraphDb(attributeValue);
 						if (converted == null) {
-							converted = convertGKInstanceToSimpleInstance(attributeValue, visited);
+							converted = convertGKInstanceToSimpleInstance(attributeValue, personId, visited);
 						}
 						convertedList.add(converted);
-
-
-//						convertedList.add(
-//							convertGKInstanceToSimpleInstance(attributeValue, visited)
-//						);
 					}
 
 					simpleInstance.setAttribute(attribute.getName(), convertedList);
@@ -126,7 +115,6 @@ public class GraphDBConverter {
 	}
 
 	private static SimpleInstance fetchFromGraphDb(GKInstance instance) {
-		System.out.println("Fetching: " + instance);
 		CuratorToolWSAPI curatorToolWSAPI = new CuratorToolWSAPI();
 		return curatorToolWSAPI.findDatabaseObjectByDbId(instance.getDBID());
 	}
