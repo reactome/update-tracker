@@ -137,10 +137,9 @@ public class UpdateTrackerHandler {
                 .getChanges(equivalentInstancePair);
 
             if (!actions.isEmpty()) {
-                logger.info("Actions " + actions);
                 GKInstance currentInstance = equivalentInstancePair.getValue();
 
-                logger.info("Storing instance in current slice dba " + currentInstance);
+                logger.info("Actions " + actions + " for " + currentInstance);
 
                 GKInstance updateTrackerGKInstance = sliceUpdateTrackerBuilder
                     .build(currentInstance, actions)
