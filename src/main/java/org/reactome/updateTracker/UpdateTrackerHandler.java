@@ -59,23 +59,54 @@ public class UpdateTrackerHandler {
     }
 
     public void handleUpdateTrackerInstances(boolean uploadUpdateTrackerInstancesToSource) throws Exception {
+        List<GKInstance> updateTrackerInstances = createUpdateTrackerInstances();
+
+        storeUpdateTrackerInstancesInSliceDatabase(updateTrackerInstances);
+
         if (uploadUpdateTrackerInstancesToSource) {
-            logger.info("Storing release instance in source database");
             storeReleaseInstanceInSourceDatabase();
+
+            storeUpdateTrackerInstancesInSourceDatabase(updateTrackerInstances);
         }
+    }
+
+    private List<GKInstance> createUpdateTrackerInstances() throws Exception {
+        List<GKInstance> updateTrackerInstances = new ArrayList<>();
 
         logger.info("Creating event update tracker instances");
-        createAndStoreUpdateTrackerInstances(ComparisonType.EVENT, uploadUpdateTrackerInstancesToSource);
+        updateTrackerInstances.addAll(createUpdateTrackerInstances(ComparisonType.EVENT));
 
         logger.info("Creating physical entity update tracker instances");
-        createAndStoreUpdateTrackerInstances(ComparisonType.PHYSICAL_ENTITY, uploadUpdateTrackerInstancesToSource);
+        updateTrackerInstances.addAll(createUpdateTrackerInstances(ComparisonType.PHYSICAL_ENTITY));
+
+        return updateTrackerInstances;
+    }
+
+    private void storeUpdateTrackerInstancesInSliceDatabase(List<GKInstance> updateTrackerInstances) throws Exception {
+        logger.info("Storing update tracker instances in slice db");
+
+        for (GKInstance updateTrackerInstance : updateTrackerInstances) {
+            getCurrentSliceDBA().storeInstance(updateTrackerInstance);
+        }
     }
     
     private void storeReleaseInstanceInSourceDatabase() throws Exception {
+        logger.info("Storing release instance in source database");
+
         GKInstance releaseInstanceFromSlice = getMostRecentReleaseInstance(getCurrentSliceDBA());
-        releaseInstance = cloneReleaseInstance(releaseInstanceFromSlice);
-        SimpleInstance committedReleaseInstance = curatorToolWSAPI.commit(releaseInstance);
-        releaseInstance.setDbId(committedReleaseInstance.getDbId());
+        releaseInstance = curatorToolWSAPI.commit(cloneReleaseInstance(releaseInstanceFromSlice));
+    }
+
+    private void storeUpdateTrackerInstancesInSourceDatabase(List<GKInstance> updateTrackerInstances)
+        throws Exception {
+
+        logger.info("Storing update tracker instances in source database");
+
+        List<SimpleInstance> updateTrackerSimpleInstances = new ArrayList<>();
+        for (GKInstance updateTrackerInstance : updateTrackerInstances) {
+            updateTrackerSimpleInstances.add(convertUpdateTrackerToSimpleInstance(updateTrackerInstance));
+        }
+        commitToSourceDB(updateTrackerSimpleInstances);
     }
 
     private SimpleInstance cloneReleaseInstance(GKInstance releaseInstance) throws Exception {
@@ -89,8 +120,7 @@ public class UpdateTrackerHandler {
         return newReleaseInstanceGraph;
     }
 
-    private void createAndStoreUpdateTrackerInstances(
-        ComparisonType comparisonType, boolean uploadUpdateTrackerInstancesToSource) throws Exception {
+    private List<GKInstance> createUpdateTrackerInstances(ComparisonType comparisonType) throws Exception {
 
         UpdateTracker.UpdateTrackerBuilder sliceUpdateTrackerBuilder = getUpdateTrackerBuilder();
 
@@ -101,7 +131,7 @@ public class UpdateTrackerHandler {
             instanceMatcher.getCurrentToPreviousInstanceMap().entrySet();
 
         logger.info("Instance pairs size: " + equivalentInstancePairs.size());
-        List<SimpleInstance> toBeUploadedToSrcDBA = new ArrayList<>();
+        List<GKInstance> updateTrackerInstances = new ArrayList<>();
         for (Map.Entry<GKInstance, GKInstance> equivalentInstancePair : equivalentInstancePairs) {
             Set<Action> actions = getInstanceComparer(comparisonType, equivalentInstancePair)
                 .getChanges(equivalentInstancePair);
@@ -115,22 +145,19 @@ public class UpdateTrackerHandler {
                 GKInstance updateTrackerGKInstance = sliceUpdateTrackerBuilder
                     .build(currentInstance, actions)
                     .createUpdateTrackerInstance(getCurrentSliceDBA());
-                getCurrentSliceDBA().storeInstance(updateTrackerGKInstance);
-
-                if (uploadUpdateTrackerInstancesToSource) {
-                    logger.info("Adding toBeUploadedToSrcDBA " + currentInstance);
-
-                    SimpleInstance updateTracker = GraphDBConverter.convertGKInstanceToSimpleInstance(
-                        updateTrackerGKInstance, getPersonId());
-                    updateTracker.setDbId(-1L);
-                    updateTracker.setAttribute("release", releaseInstance);
-                    updateTracker.setCreated(getCreatedInstanceEdit());
-
-                    toBeUploadedToSrcDBA.add(updateTracker);
-                }
+                updateTrackerInstances.add(updateTrackerGKInstance);
             }
         }
-        commitToSourceDB(toBeUploadedToSrcDBA);
+        return updateTrackerInstances;
+    }
+
+    private SimpleInstance convertUpdateTrackerToSimpleInstance(GKInstance updateTrackerGKInstance) throws Exception {
+        SimpleInstance updateTrackerSimpleInstance = GraphDBConverter.convertGKInstanceToSimpleInstance(
+            updateTrackerGKInstance, getPersonId());
+        updateTrackerSimpleInstance.setDbId(-1L);
+        updateTrackerSimpleInstance.setAttribute("release", getReleaseInstance());
+        updateTrackerSimpleInstance.setCreated(getCreatedInstanceEdit());
+        return updateTrackerSimpleInstance;
     }
 
     private InstanceComparer getInstanceComparer(ComparisonType comparisonType, Map.Entry<GKInstance, GKInstance> equivalentInstancePair) throws Exception {
@@ -198,6 +225,10 @@ public class UpdateTrackerHandler {
 
     private InstanceEdit getCreatedInstanceEdit() {
         return this.createdInstanceEdit;
+    }
+
+    private SimpleInstance getReleaseInstance() {
+        return this.releaseInstance;
     }
 
     private UpdateTracker.UpdateTrackerBuilder getUpdateTrackerBuilder() throws Exception {
