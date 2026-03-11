@@ -73,7 +73,7 @@ public class CuratorToolWSAPITest {
 		SimpleInstance simpleInstance = new SimpleInstance();
 		simpleInstance.setDefaultPersonId(1551959L);
 		simpleInstance.setDbId(-1L);
-		simpleInstance.setSchemaClassName("DatabaseObject");
+		simpleInstance.setSchemaClassName("Summation");
 		simpleInstance.setDisplayName("Test Update Tracker");
 		simpleInstance.setCreated(createInstanceEdit(simpleInstance));
 		curatorToolWSAPI.commit(simpleInstance);
