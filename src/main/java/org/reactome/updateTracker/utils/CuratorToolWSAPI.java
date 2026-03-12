@@ -77,8 +77,6 @@ public class CuratorToolWSAPI {
 			ObjectMapper mapper = new ObjectMapper();
 			String jsonPayload = mapper.writeValueAsString(dbIds);
 
-			System.out.println(jsonPayload);
-
 			post.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
 			HttpResponse response = httpClient.execute(post);
 			int statusCode = response.getStatusLine().getStatusCode();
