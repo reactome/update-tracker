@@ -2,4 +2,4 @@ This is the project that is used to analyze changes between two slices (releases
 
 **Note**
 
-Make sure the user name and the account for the h2 database should be the same. The two files at the data folder most likely will not work for you.
+Make sure the user name and the account for the h2 database should be the same.
