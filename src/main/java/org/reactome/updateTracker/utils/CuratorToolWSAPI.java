@@ -25,7 +25,7 @@ import java.io.IOException;
  */
 public class CuratorToolWSAPI {
 	private static final String HOST_URL = "http://localhost:9090/api/";
-	private static final String AUTH_URL = HOST_URL + "authenticate";
+	private static final String AUTH_URL = HOST_URL + "auth/login";
 	private static final String FIND_BY_DB_ID = HOST_URL + "curation/findByDbId/";
 	private static final String FIND_DB_OBJ_BY_DB_ID = HOST_URL + "curation/findDatabaseObjectByDbId/";
 	private static final String COMMIT_URL = HOST_URL + "curation/commit";

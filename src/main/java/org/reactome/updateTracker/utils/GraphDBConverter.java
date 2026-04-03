@@ -1,15 +1,13 @@
 package org.reactome.updateTracker.utils;
 
-import org.gk.model.GKInstance;
-import org.gk.model.ReactomeJavaConstants;
-import org.gk.schema.GKSchemaClass;
-import org.gk.schema.Schema;
-import org.gk.schema.SchemaAttribute;
-import org.reactome.curation.model.SimpleInstance;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.gk.model.GKInstance;
+import org.gk.model.ReactomeJavaConstants;
+import org.gk.schema.SchemaAttribute;
+import org.reactome.curation.model.SimpleInstance;
 
 /**
  * @author Joel Weiser (joel.weiser@oicr.on.ca)

@@ -23,7 +23,7 @@ import org.reactome.updateTracker.matcher.InstanceMatcher;
 import org.reactome.updateTracker.matcher.PhysicalEntityMatcher;
 import org.reactome.updateTracker.model.Action;
 import org.reactome.updateTracker.model.UpdateTracker;
-import org.reactome.updateTracker.utils.CuratorToolWSAPI;
+import org.reactome.updateTracker.utils.CuratorToolAPI;
 import org.reactome.updateTracker.utils.GraphDBConverter;
 
 /**
@@ -38,7 +38,7 @@ public class UpdateTrackerHandler {
     private long personId;
     private InstanceEdit createdInstanceEdit;
 
-    private CuratorToolWSAPI curatorToolWSAPI;
+    private CuratorToolAPI curatorToolAPI;
     private SimpleInstance releaseInstance;
 
     public UpdateTrackerHandler(
@@ -49,7 +49,7 @@ public class UpdateTrackerHandler {
         dbAdaptorMapBuilder.setNewerDbAdaptor(currentSliceDBA);
         dbAdaptorMapBuilder.setTargetDbAdaptor(sourceDBA);
 
-        this.curatorToolWSAPI = new CuratorToolWSAPI();
+        this.curatorToolAPI = new CuratorToolAPI();
 
         this.dbAdaptorMap = dbAdaptorMapBuilder.build();
         this.personId = personId;
@@ -74,7 +74,7 @@ public class UpdateTrackerHandler {
         GKInstance releaseInstanceFromSlice = getMostRecentReleaseInstance(getCurrentSliceDBA());
         releaseInstance = cloneReleaseInstance(releaseInstanceFromSlice);
 
-        SimpleInstance committedReleaseInstance = curatorToolWSAPI.commit(releaseInstance);
+        SimpleInstance committedReleaseInstance = curatorToolAPI.commit(releaseInstance);
         releaseInstance.setDbId(committedReleaseInstance.getDbId());
     }
     
@@ -88,7 +88,7 @@ public class UpdateTrackerHandler {
     }
 
     private InstanceEdit createInstanceEdit(long personDbId) {
-        Person person = curatorToolWSAPI.fetchPersonInstance(personDbId);
+        Person person = curatorToolAPI.fetchPersonInstance(personDbId);
         if (person == null) {
             logger.error("Cannot find Person with dbId: " + personDbId);
             throw new RuntimeException("Person " + personDbId + " not found");
@@ -202,7 +202,7 @@ public class UpdateTrackerHandler {
             return; // Nothing to do.
 
         for (SimpleInstance instance : instances) {
-            curatorToolWSAPI.commit(instance);
+            curatorToolAPI.commit(instance);
         }
     }
 
