@@ -128,7 +128,7 @@ public class UpdateTrackerHandler {
 
         logger.info("Getting " + comparisonType.name() + " instance pairs...");
         Set<Map.Entry<GKInstance,GKInstance>> equivalentInstancePairs =
-            instanceMatcher.getCurrentToPreviousInstanceMap().entrySet();
+            instanceMatcher.getPreviousToCurrentInstanceMap().entrySet();
 
         logger.info("Instance pairs size: " + equivalentInstancePairs.size());
         List<GKInstance> updateTrackerInstances = new ArrayList<>();
