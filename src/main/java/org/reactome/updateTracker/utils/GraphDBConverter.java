@@ -14,7 +14,7 @@ import static org.reactome.updateTracker.utils.DBUtils.getSchemaClassName;
  * Created 9/9/2025
  */
 public class GraphDBConverter {
-	private static final CuratorToolWSAPI curatorToolWSAPI = new CuratorToolWSAPI();
+	private static final CuratorToolAPI curatorToolAPI = new CuratorToolAPI();
 
 	public static SimpleInstance convertGKInstanceToSimpleInstance(GKInstance gkInstance, long personId) throws Exception {
 		return convertGKInstanceToSimpleInstance(gkInstance, personId, new HashMap<>());
@@ -117,6 +117,6 @@ public class GraphDBConverter {
 	}
 
 	private static SimpleInstance fetchFromGraphDb(GKInstance instance) {
-		return curatorToolWSAPI.findDatabaseObjectByDbId(instance.getDBID());
+		return curatorToolAPI.findDatabaseObjectByDbId(instance.getDBID());
 	}
 }

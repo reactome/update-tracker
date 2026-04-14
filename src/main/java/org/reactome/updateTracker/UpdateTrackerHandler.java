@@ -22,7 +22,7 @@ import org.reactome.updateTracker.matcher.InstanceMatcher;
 import org.reactome.updateTracker.matcher.PhysicalEntityMatcher;
 import org.reactome.updateTracker.model.Action;
 import org.reactome.updateTracker.model.UpdateTracker;
-import org.reactome.updateTracker.utils.CuratorToolWSAPI;
+import org.reactome.updateTracker.utils.CuratorToolAPI;
 import org.reactome.updateTracker.utils.DBUtils;
 import org.reactome.updateTracker.utils.GraphDBConverter;
 
@@ -42,7 +42,7 @@ public class UpdateTrackerHandler {
     private SimpleInstance releaseInstance;
     private InstanceEdit createdInstanceEdit;
 
-    private CuratorToolWSAPI curatorToolWSAPI;
+    private CuratorToolAPI curatorToolAPI;
 
     public UpdateTrackerHandler(
         MySQLAdaptor currentSliceDBA, MySQLAdaptor previousSliceDBA, long personId
@@ -51,7 +51,7 @@ public class UpdateTrackerHandler {
         dbAdaptorMapBuilder.setOlderDbAdaptor(previousSliceDBA);
         dbAdaptorMapBuilder.setNewerDbAdaptor(currentSliceDBA);
 
-        this.curatorToolWSAPI = new CuratorToolWSAPI();
+        this.curatorToolAPI = new CuratorToolAPI();
 
         this.dbAdaptorMap = dbAdaptorMapBuilder.build();
         this.personId = personId;
@@ -68,6 +68,8 @@ public class UpdateTrackerHandler {
 
             storeUpdateTrackerInstancesInSourceDatabase(updateTrackerInstances);
         }
+
+        closeCuratorToolAPI();
     }
 
     private List<GKInstance> createUpdateTrackerInstances() throws Exception {
@@ -94,7 +96,7 @@ public class UpdateTrackerHandler {
         logger.info("Storing release instance in source database");
 
         GKInstance releaseInstanceFromSlice = getMostRecentReleaseInstance(getCurrentSliceDBA());
-        releaseInstance = curatorToolWSAPI.commit(cloneReleaseInstance(releaseInstanceFromSlice));
+        releaseInstance = curatorToolAPI.commit(cloneReleaseInstance(releaseInstanceFromSlice));
     }
 
     private void storeUpdateTrackerInstancesInSourceDatabase(List<GKInstance> updateTrackerInstances)
@@ -107,6 +109,12 @@ public class UpdateTrackerHandler {
             updateTrackerSimpleInstances.add(convertUpdateTrackerToSimpleInstance(updateTrackerInstance));
         }
         commitToSourceDB(updateTrackerSimpleInstances);
+    }
+
+    private void closeCuratorToolAPI() {
+        logger.info("Closing curator tool API");
+
+        curatorToolAPI.close();
     }
 
     private SimpleInstance cloneReleaseInstance(GKInstance releaseInstance) throws Exception {
@@ -203,7 +211,7 @@ public class UpdateTrackerHandler {
     }
 
     private void commitToSourceDB(SimpleInstance instance) throws Exception {
-        curatorToolWSAPI.commit(instance);
+        curatorToolAPI.commit(instance);
     }
 
     private DbAdaptorMap getDbAdaptorMap() {
@@ -239,7 +247,7 @@ public class UpdateTrackerHandler {
     }
 
     private InstanceEdit createInstanceEdit(long personDbId) {
-        Person person = curatorToolWSAPI.fetchPersonInstance(personDbId);
+        Person person = curatorToolAPI.fetchPersonInstance(personDbId);
         if (person == null) {
             logger.error("Cannot find Person with dbId: " + personDbId);
             throw new RuntimeException("Person " + personDbId + " not found");
