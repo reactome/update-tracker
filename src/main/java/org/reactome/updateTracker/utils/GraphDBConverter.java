@@ -58,9 +58,7 @@ public class GraphDBConverter {
 			}
 
 			if (attribute.isInstanceTypeAttribute()) {
-
 				if (!attribute.isMultiple()) {
-
 					GKInstance attributeValue =
 						(GKInstance) gkInstance.getAttributeValue(attribute);
 
@@ -69,15 +67,18 @@ public class GraphDBConverter {
 						converted = convertGKInstanceToSimpleInstance(attributeValue, personId, visited);
 					}
 
-					if (!attribute.getName().equals("updatedInstance")) {
-						simpleInstance.setAttribute(attribute.getName(), converted);
+					if (isExceptionalAttribute(attribute)) {
+						if (attribute.getName().equals("updatedInstance")) {
+							simpleInstance.setAttribute(attribute.getName(), Collections.singletonList(converted));
+						} else if (attribute.getName().equals("_release")) {
+							simpleInstance.setAttribute("release", converted);
+						}
 					} else {
-						simpleInstance.setAttribute(attribute.getName(), Collections.singletonList(converted));
+						simpleInstance.setAttribute(attribute.getName(), converted);
 					}
 				} else {
 
-					List<GKInstance> attributeValues =
-						gkInstance.getAttributeValuesList(attribute);
+					List<GKInstance> attributeValues = gkInstance.getAttributeValuesList(attribute);
 
 					List<SimpleInstance> convertedList = new ArrayList<>();
 
@@ -111,12 +112,16 @@ public class GraphDBConverter {
 		return simpleInstance;
 	}
 
-
 	private static boolean valueIsNull(GKInstance gkInstance, SchemaAttribute attribute) throws Exception {
 		return gkInstance.getAttributeValue(attribute) == null;
 	}
 
 	private static SimpleInstance fetchFromGraphDb(GKInstance instance) {
 		return curatorToolAPI.findDatabaseObjectByDbId(instance.getDBID());
+	}
+
+	private static boolean isExceptionalAttribute(SchemaAttribute attribute) {
+		return attribute.getName().equals("updatedInstance") ||
+			attribute.getName().equals("_release");
 	}
 }

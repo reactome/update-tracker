@@ -201,7 +201,7 @@ public class UpdateTrackerHandler {
         return instanceMatcher;
     }
 
-    private void commitToSourceDB(List<SimpleInstance> instances) throws Exception {
+    private void commitToSourceDB(List<SimpleInstance> instances) {
         if (instances == null || instances.isEmpty())
             return; // Nothing to do.
 
@@ -210,7 +210,7 @@ public class UpdateTrackerHandler {
         }
     }
 
-    private void commitToSourceDB(SimpleInstance instance) throws Exception {
+    private void commitToSourceDB(SimpleInstance instance) {
         curatorToolAPI.commit(instance);
     }
 
